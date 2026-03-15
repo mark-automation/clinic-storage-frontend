@@ -1,95 +1,55 @@
-import { useState, useCallback } from 'react';
-import api from '../utils/api';
-import { FileItem, PaginatedResponse } from '../types';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { FileItem } from '@/types';
+import { mockApi } from '@/utils/mockApi';
 
-interface UseFilesOptions {
-  studyId?: number;
-  page?: number;
-  pageSize?: number;
+export function useFiles(studyId?: string) {
+  return useQuery({
+    queryKey: ['files', studyId],
+    queryFn: () => mockApi.getFiles(studyId),
+    enabled: studyId !== undefined,
+  });
 }
 
-export function useFiles(options: UseFilesOptions = {}) {
-  const { studyId, page = 1, pageSize = 50 } = options;
-  const [data, setData] = useState<PaginatedResponse<FileItem> | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
+export function useDeletedFiles() {
+  return useQuery({
+    queryKey: ['files', 'deleted'],
+    queryFn: mockApi.getDeletedFiles,
+  });
+}
 
-  const fetchFiles = useCallback(async () => {
-    try {
-      setLoading(true);
-      let url = '/files';
-      if (studyId) {
-        url = `/files/study/${studyId}`;
-      }
-      
-      const params = new URLSearchParams();
-      params.append('page', page.toString());
-      params.append('pageSize', pageSize.toString());
-      
-      const response = await api.get(`${url}?${params}`);
-      setData(response.data);
-      setError(null);
-    } catch (err) {
-      setError('Failed to load files');
-    } finally {
-      setLoading(false);
-    }
-  }, [studyId, page, pageSize]);
+export function useUploadFile() {
+  const queryClient = useQueryClient();
 
-  const uploadFile = async (file: File, studyId: number) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('studyId', studyId.toString());
+  return useMutation({
+    mutationFn: ({ studyId, file, onProgress }: { studyId: string; file: File; onProgress?: (p: number) => void }) =>
+      mockApi.uploadFile(studyId, file, onProgress),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['files'] });
+      queryClient.invalidateQueries({ queryKey: ['storage'] });
+    },
+  });
+}
 
-    const response = await api.post('/files/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      onUploadProgress: (progressEvent) => {
-        const progress = progressEvent.total
-          ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
-          : 0;
-        setUploadProgress(progress);
-      }
-    });
-    
-    setUploadProgress(0);
-    return response.data;
-  };
+export function useDeleteFile() {
+  const queryClient = useQueryClient();
 
-  const downloadFile = async (fileId: number, fileName: string) => {
-    const response = await api.get(`/files/${fileId}/download`, {
-      responseType: 'blob'
-    });
-    
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', fileName);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
-  };
+  return useMutation({
+    mutationFn: mockApi.deleteFile,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['files'] });
+      queryClient.invalidateQueries({ queryKey: ['storage'] });
+    },
+  });
+}
 
-  const getPresignedUrl = async (fileId: number) => {
-    const response = await api.get(`/files/${fileId}/url`);
-    return response.data.url;
-  };
+export function useRestoreFile() {
+  const queryClient = useQueryClient();
 
-  const deleteFile = async (fileId: number) => {
-    await api.delete(`/files/${fileId}`);
-    await fetchFiles();
-  };
-
-  return {
-    data,
-    loading,
-    error,
-    uploadProgress,
-    fetchFiles,
-    uploadFile,
-    downloadFile,
-    getPresignedUrl,
-    deleteFile
-  };
+  return useMutation({
+    mutationFn: mockApi.restoreFile,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['files'] });
+      queryClient.invalidateQueries({ queryKey: ['storage'] });
+    },
+  });
 }

@@ -1,68 +1,53 @@
 export interface Patient {
-  id: number;
-  code: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  gender: string;
-  phone: string;
+  id: string;
+  name: string;
   email: string;
-  address: string;
-  createdAt: string;
-  updatedAt: string;
+  dateOfBirth: string;
+  studyCount: number;
+  lastModified: string;
 }
 
 export interface Study {
-  id: number;
-  patientId: number;
-  patientCode: string;
-  studyType: string;
+  id: string;
+  patientId: string;
+  name: string;
   description: string;
-  studyDate: string;
-  status: 'pending' | 'completed' | 'archived';
   fileCount: number;
-  totalSize: number;
-  createdAt: string;
-  updatedAt: string;
+  lastModified: string;
 }
 
 export interface FileItem {
-  id: number;
-  studyId: number;
-  fileName: string;
-  originalName: string;
-  contentType: string;
+  id: string;
+  studyId: string;
+  name: string;
   size: number;
-  storageTier: 'hot' | 'cold';
-  storagePath: string;
+  type: string;
+  thumbnailUrl?: string;
   createdAt: string;
-  updatedAt: string;
+  modifiedAt: string;
+  isDeleted: boolean;
 }
 
 export interface StorageStats {
-  hotStorage: {
-    used: number;
-    files: number;
-  };
-  coldStorage: {
-    used: number;
-    files: number;
-  };
-  totalCost: number;
-  savingsVsGoogleDrive: number;
-}
-
-export interface PaginatedResponse<T> {
-  items: T[];
-  totalCount: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
+  totalSpace: number;
+  usedSpace: number;
+  fileCount: number;
+  folderCount: number;
 }
 
 export interface User {
-  id: number;
-  username: string;
+  id: string;
   email: string;
-  role: 'admin' | 'user';
+  name: string;
+  avatarUrl?: string;
+}
+
+export type ViewMode = 'grid' | 'list';
+
+export interface ContextMenuItem {
+  label: string;
+  icon?: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
 }
