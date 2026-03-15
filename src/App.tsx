@@ -144,7 +144,7 @@ function AppContent() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter basename="/clinic-storage-frontend">
         <AppContent />
       </BrowserRouter>
     </QueryClientProvider>
